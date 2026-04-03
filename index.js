@@ -66,7 +66,7 @@ if (isProduction && !process.env.SESSION_SECRET) {
 }
 
 const sessionStore = new FileStore({
-    path: './sessions',
+    path: process.env.SESSION_STORE_PATH || './sessions',
     ttl: 86400,
     retries: 0,
     secret: sessionSecret,

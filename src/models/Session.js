@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const SESSION_DIR = path.join(process.cwd(), 'auth_info_baileys');
+const SESSION_DIR = process.env.AUTH_DIR || path.join(process.cwd(), 'auth_info_baileys');
 
 class Session {
     /**

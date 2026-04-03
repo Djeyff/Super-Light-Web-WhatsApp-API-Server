@@ -13,7 +13,14 @@ RUN npm install
 COPY . .
 
 # Create persistent data directories
-RUN mkdir -p data sessions logs uploads auth_info_baileys
+# In Zeabur: mount a volume at /app/data to survive restarts
+RUN mkdir -p /app/data/auth_info_baileys /app/data/sessions /app/data/uploads /app/logs
+
+# Environment defaults for persistent storage
+# Override these with Zeabur env vars pointing to the mounted volume
+ENV DATABASE_PATH=/app/data/whatsapp.db
+ENV AUTH_DIR=/app/data/auth_info_baileys
+ENV SESSION_STORE_PATH=/app/data/sessions
 
 EXPOSE 3000
 

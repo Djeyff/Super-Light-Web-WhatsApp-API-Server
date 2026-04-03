@@ -27,8 +27,8 @@ const logger = pino({ level: process.env.LOG_LEVEL || defaultLogLevel });
 const activeSockets = new Map();
 const retryCounters = new Map();
 
-// Auth directory
-const AUTH_DIR = path.join(__dirname, '../../auth_info_baileys');
+// Auth directory — configurable via env for persistent volume support
+const AUTH_DIR = process.env.AUTH_DIR || path.join(__dirname, '../../auth_info_baileys');
 
 /**
  * Ensure auth directory exists
