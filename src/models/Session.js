@@ -122,6 +122,35 @@ class Session {
     }
 
     /**
+     * Get tenant_id for a session (Retena multi-tenant)
+     * @param {string} sessionId - Session ID
+     * @returns {string|null} tenant_id or null
+     */
+    static getTenantId(sessionId) {
+        const session = this.findById(sessionId);
+        return session?.tenant_id || null;
+    }
+
+    /**
+     * Set tenant_id for a session
+     * @param {string} sessionId - Session ID
+     * @param {string} tenantId  - Tenant UUID
+     */
+    static setTenantId(sessionId, tenantId) {
+        // column is added by migration; gracefully skip if missing
+        try {
+            const stmt = db.prepare(`
+                UPDATE whatsapp_sessions
+                SET tenant_id = ?, updated_at = datetime('now')
+                WHERE id = ?
+            `);
+            stmt.run(tenantId, sessionId);
+        } catch (e) {
+            console.warn('[Session] setTenantId error (migration pending?):', e.message);
+        }
+    }
+
+    /**
      * Count active sessions
      * @returns {number} Count of non-disconnected sessions
      */

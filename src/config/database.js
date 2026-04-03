@@ -42,7 +42,7 @@ function initializeSchema() {
         )
     `);
 
-    // WhatsApp sessions table (metadata only, auth stored in auth_info_baileys)
+    // WhatsApp sessions table (metadata only, auth stored in auth_info_baileys or Supabase)
     db.exec(`
         CREATE TABLE IF NOT EXISTS whatsapp_sessions (
             id TEXT PRIMARY KEY,
@@ -50,10 +50,19 @@ function initializeSchema() {
             token TEXT NOT NULL,
             status TEXT DEFAULT 'DISCONNECTED',
             detail TEXT,
+            tenant_id TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+
+    // Migration: add tenant_id column if it doesn't exist yet
+    try {
+        db.exec(`ALTER TABLE whatsapp_sessions ADD COLUMN tenant_id TEXT`);
+        console.log('[DB] Migration: added tenant_id column to whatsapp_sessions');
+    } catch (_) {
+        // Column already exists — expected on subsequent starts
+    }
 
     // Campaigns table
     db.exec(`

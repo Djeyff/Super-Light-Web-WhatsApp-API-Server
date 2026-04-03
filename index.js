@@ -349,6 +349,19 @@ app.get('/api/v1/sessions/:sessionId/qr', (req, res) => {
     return response.success(res, { message: 'QR code generation started' });
 });
 
+// Mount Retena routes (multi-tenant, when RETENA_MODE=true)
+const RETENA_MODE = process.env.RETENA_MODE === 'true' || process.env.RETENA_MODE === '1';
+if (RETENA_MODE) {
+    const { router: retenaRouter } = require('./src/routes/retena');
+    app.use('/api/retena', retenaRouter);
+    console.log('[SYSTEM] Retena multi-tenant mode: enabled — routes at /api/retena');
+
+    // Background retry for untranscribed voice notes
+    const retenaService = require('./src/services/retena');
+    setInterval(() => retenaService.retryUntranscribed(null), 2 * 60 * 1000);
+    setTimeout(() => retenaService.retryUntranscribed(null), 30 * 1000);
+}
+
 // Mount API router (Last, so it doesn't shadow explicit index.js routes)
 app.use('/api/v1', apiRouter);
 
