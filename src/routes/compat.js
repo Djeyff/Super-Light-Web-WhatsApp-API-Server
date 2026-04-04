@@ -44,13 +44,10 @@ const _qrStore = require('./retena')._qrStore || new Map();
 
 function sessionStatus(sessionId) {
     const wa   = getWA();
-    const sess = require('../models/Session').findById(sessionId);
-
-    if (!sess) return { status: 'not_found', session_id: sessionId };
-
     const sock = wa.getSocket(sessionId);
     const connected = wa.isConnected(sessionId);
 
+    // Check in-memory socket first (survives even if SQLite row is missing after redeploy)
     if (connected) {
         return {
             status:     'connected',
@@ -59,6 +56,15 @@ function sessionStatus(sessionId) {
             session_id: sessionId,
         };
     }
+
+    // QR in store but socket active = qr_ready
+    if (_qrStore.has(sessionId)) {
+        return { status: 'qr_ready', session_id: sessionId, number: null };
+    }
+
+    // Fall back to SQLite
+    const sess = require('../models/Session').findById(sessionId);
+    if (!sess) return { status: 'not_found', session_id: sessionId };
 
     // Map SQLite status to old retena-whatsapp status strings
     const statusMap = {
