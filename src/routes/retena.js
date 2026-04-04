@@ -45,7 +45,9 @@ function getWA() {
 
 // In-memory QR store (set by connection.update in whatsapp.js via onUpdate callback)
 // Keyed by sessionId → { qr, qrImage, generatedAt }
+// Exported so compat.js can share the same instance
 const _qrStore = new Map();
+module.exports._qrStore = _qrStore; // set early so compat.js require() gets it
 
 /**
  * Register onUpdate callback so we can capture QR codes.
@@ -234,4 +236,4 @@ router.delete('/sessions/:id', async (req, res) => {
     res.json({ ok: true });
 });
 
-module.exports = { router, onSessionUpdate };
+module.exports = { router, onSessionUpdate, _qrStore };

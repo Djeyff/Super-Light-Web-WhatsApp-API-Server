@@ -278,6 +278,15 @@ app.post('/api/v1/sessions', async (req, res) => {
                 type: 'session-update',
                 data: { sessionId: id, status, detail, qr }
             });
+            // Populate compat QR store if Retena mode
+            if (RETENA_MODE && qr) {
+                try {
+                    const { _qrStore } = require('./src/routes/retena');
+                    require('qrcode').toDataURL(qr, { width: 400, margin: 2 })
+                        .then(img => _qrStore.set(id, { qr, qrImage: img, generatedAt: Date.now() }))
+                        .catch(() => {});
+                } catch (_) {}
+            }
         }, null);
 
         // Update sessionTokens map
@@ -344,6 +353,14 @@ app.get('/api/v1/sessions/:sessionId/qr', (req, res) => {
             type: 'session-update',
             data: { sessionId: id, status, detail, qr }
         });
+        if (RETENA_MODE && qr) {
+            try {
+                const { _qrStore } = require('./src/routes/retena');
+                require('qrcode').toDataURL(qr, { width: 400, margin: 2 })
+                    .then(img => _qrStore.set(id, { qr, qrImage: img, generatedAt: Date.now() }))
+                    .catch(() => {});
+            } catch (_) {}
+        }
     }, null);
 
     return response.success(res, { message: 'QR code generation started' });
@@ -352,9 +369,18 @@ app.get('/api/v1/sessions/:sessionId/qr', (req, res) => {
 // Mount Retena routes (multi-tenant, when RETENA_MODE=true)
 const RETENA_MODE = process.env.RETENA_MODE === 'true' || process.env.RETENA_MODE === '1';
 if (RETENA_MODE) {
-    const { router: retenaRouter } = require('./src/routes/retena');
+    const { router: retenaRouter, _qrStore } = require('./src/routes/retena');
     app.use('/api/retena', retenaRouter);
     console.log('[SYSTEM] Retena multi-tenant mode: enabled — routes at /api/retena');
+
+    // Compat layer: old retena-whatsapp API shape at /session/:id/...
+    const compatRouter = require('./src/routes/compat');
+    app.use('/session', compatRouter);
+    console.log('[SYSTEM] Compat routes mounted at /session/:id/...');
+
+    // Patch standard session creation to also populate _qrStore
+    const _origConnect = whatsappService.connect.bind(whatsappService);
+    // (QR store is fed via onUpdate callback in compat.js start route)
 
     // Background retry for untranscribed voice notes
     const retenaService = require('./src/services/retena');
@@ -400,6 +426,14 @@ User.ensureAdmin(process.env.ADMIN_DASHBOARD_PASSWORD);
                     type: 'session-update',
                     data: { sessionId: id, status, detail, qr }
                 });
+                if (RETENA_MODE && qr) {
+                    try {
+                        const { _qrStore } = require('./src/routes/retena');
+                        require('qrcode').toDataURL(qr, { width: 400, margin: 2 })
+                            .then(img => _qrStore.set(id, { qr, qrImage: img, generatedAt: Date.now() }))
+                            .catch(() => {});
+                    } catch (_) {}
+                }
             }, null);
         }
     }
